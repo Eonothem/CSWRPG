@@ -8,6 +8,7 @@ using UnityEngine.UI;
 
 public class BattleManager : MonoBehaviour {
 
+    //BattleStates control the flow of the battle
 	public enum battleState 
 	{
 		start,
@@ -18,13 +19,19 @@ public class BattleManager : MonoBehaviour {
 	}
 
 	public battleState currentState;
+
+    //Contains the two parties that are in combat
 	public List<GameObject> players;
 	public List<GameObject> opponents;
 
+    //UI Elements
 	private GameObject canvas;
 	private RectTransform bottomPanel;
 	private RectTransform topPanel;
 	private Text dialogText;
+
+    //When you battle, each turn you select a player, a weapon, and a opponent
+    //Instead of passing everything through method passing i think it's easier to just to change it as the turn progresses
 
 	private GameObject currentPlayer;
 	private GameObject currentOpponent;
