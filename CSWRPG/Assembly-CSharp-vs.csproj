@@ -48,10 +48,12 @@
   <ItemGroup>
      <Compile Include="Assets\Scripts\Actor.cs" />
      <Compile Include="Assets\Scripts\BattleComponent.cs" />
-     <Compile Include="Assets\Scripts\BattleManager.cs" />
+     <Compile Include="Assets\Scripts\BattleLoader.cs" />
      <Compile Include="Assets\Scripts\CameraController.cs" />
      <Compile Include="Assets\Scripts\LoadNewArea.cs" />
+     <Compile Include="Assets\Scripts\PartyMemberData.cs" />
      <Compile Include="Assets\Scripts\PlayerController.cs" />
+     <Compile Include="Assets\Scripts\PlayerData.cs" />
      <Compile Include="Assets\Scripts\PlayerStartPoint.cs" />
      <Compile Include="Assets\Scripts\TurnBasedBattleManager.cs" />
      <Compile Include="Assets\Scripts\Useable.cs" />

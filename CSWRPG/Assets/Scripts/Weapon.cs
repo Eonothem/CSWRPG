@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+[System.Serializable] 
 public class Weapon : MonoBehaviour, IUseable {
 	private int damage = 0;
 	private string name = "test wepon";

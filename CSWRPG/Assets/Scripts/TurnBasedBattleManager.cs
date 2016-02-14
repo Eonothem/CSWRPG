@@ -14,7 +14,8 @@ public class TurnBasedBattleManager : MonoBehaviour {
 		player,
 		opponent,
 		lose,
-		win
+		win,
+        flee
 	}
 
 	public enum typeOfAction
@@ -25,8 +26,9 @@ public class TurnBasedBattleManager : MonoBehaviour {
 	}
 	
 	public battleState currentState;
-	public List<GameObject> players;
-	public List<GameObject> opponents;
+	public static List<GameObject> players = new List<GameObject>();
+	public static List<GameObject> opponents = new List<GameObject>();
+    public static List<string> opponentsToLoad = new List<string>();
 
 	private GameObject canvas;
 	private RectTransform bottomPanel;
@@ -39,30 +41,51 @@ public class TurnBasedBattleManager : MonoBehaviour {
 	private typeOfAction actionType;
 
 	private List<Weapon> weaponList = new List<Weapon>();
+    
 
 
 	// Use this for initialization
 	void Start () {
 
-		weaponList.Add(new Weapon ("Axe of Apathy"));
-		weaponList.Add(new Weapon ("Lance of Lethargy"));
-		weaponList.Add(new Weapon ("Sword of Stoicism"));
-
-		players [0].GetComponent<BattleComponent> ().weapons = weaponList;
-		players [1].GetComponent<BattleComponent> ().weapons = weaponList;
-		//players [0].GetComponent<BattleComponent> ().attacked = true;
+        /*
+         * What we gon do
+         * 
+         * On start, get the player data from the PlayerData class
+         * Create objects and give the battle components to those objects
+         * play some gosh darn vidya games
+         * */
+        //PlayerData.getPlayer();
+        initPlayers();
+        initEnemies();
 
 		currentState =  battleState.start;
 
 		canvas = GameObject.Find ("Canvas");
-		//GameObject textObject = Instantiate (Resources.Load ("TextObject")) as GameObject;
 		
 		bottomPanel = GameObject.Find ("BottomPanel").GetComponent<RectTransform>();
 		topPanel = GameObject.Find ("TopPanel").GetComponent<RectTransform>();
-		
-		//textObject.transform.SetParent (canvas.transform, false);
-		//dialogText = textObject.GetComponent<Text> ();
+
 	}
+
+    private void initEnemies()
+    {
+        foreach(string s in opponentsToLoad){
+            GameObject g = Instantiate(Resources.Load("Enemies/"+s)) as GameObject;
+            opponents.Add(g);
+        }
+    }
+
+    private void initPlayers(){
+        GameObject lel = new GameObject();
+
+        //GameObject top = Instantiate(Resources.Load("Enemies/TestSphere")) as GameObject;
+        //GameObject afdaf = Resources.Load("Enemies/TestSphere") as GameObject;
+        
+        BattleComponent kek = lel.AddComponent<BattleComponent>();
+        kek.paste(PlayerData.getPlayer());
+        //opponents.Add(top);
+        players.Add(lel); 
+    }
 
 	private Button createButton(string text, RectTransform panel){
 		GameObject button = Instantiate (Resources.Load ("PrefabButton")) as GameObject;
@@ -71,7 +94,6 @@ public class TurnBasedBattleManager : MonoBehaviour {
 		
 		Button b = button.GetComponent<Button> ();
 		return b;
-		//b.onClick.AddListener (() => functionOnClick());
 	}
 
 	private void clearRectTransform(RectTransform panel){
@@ -84,14 +106,20 @@ public class TurnBasedBattleManager : MonoBehaviour {
 	//=--------------------------------------=
 	//========================================
 
+	/*
+	 * listUserButtons()
+	 * ----------
+	 * When a player selects attack or flee, this shows the dialog of characters that the user can attack with.
+	 * Also this determies if the user is using an item or an attack, and sets up a new list accordingly.
+	 * 
+	 * 
+	 * */
 	public void listUserButtons(List<GameObject> members){
 		foreach (GameObject member in members) {
 			Button selectPlayerButton = createButton(member.GetComponent<BattleComponent>().name, topPanel);
 
 			GameObject tempObject = member;
 			selectPlayerButton.onClick.AddListener( () => setSelectedPlayer(tempObject));
-			//selectPlayerButton.onClick.AddListener( () => weird(players[count]));
-			//selectPlayerButton.onClick.AddListener( () => Debug.Log (tempObject.name));
 
 			if(member.GetComponent<BattleComponent>().attacked){
 				selectPlayerButton.interactable = false;
@@ -113,6 +141,11 @@ public class TurnBasedBattleManager : MonoBehaviour {
 		}
 	}
 
+	/*
+	 * listUseableButtons()
+	 * ----------
+	 * Displays a button list containing useables
+	 * */
 	private void listUsableButtons(List<IUseable> usables){
 		foreach (IUseable usable in usables) {
 			Button selectUseableButton = createButton(usable.getName(), topPanel);
@@ -123,6 +156,11 @@ public class TurnBasedBattleManager : MonoBehaviour {
 		}
 	}
 
+	/*
+	 * listTargetButtons()
+	 * --------
+	 * Creates/Displays a button list of the opponents
+	 * */
 	private void listTargetButtons(List<GameObject> targets){
 		foreach (GameObject target in targets) {
 			Button selectTargetButton = createButton(target.GetComponent<BattleComponent>().name, topPanel);
@@ -160,7 +198,15 @@ public class TurnBasedBattleManager : MonoBehaviour {
 		selectedPlayer.GetComponent<BattleComponent> ().attacked = true;
 		selectedAction.execute(selectedPlayer.GetComponent<BattleComponent>(), selectedTarget.GetComponent<BattleComponent> ());
 
-		setBotButtons (true);
+        if (actionType == typeOfAction.attack)
+        {
+            if (currentState == battleState.player)
+            {
+               selectedTarget.GetComponent<Animator>().SetTrigger("Damage");
+            }
+        }
+
+		setBotButtons(true);
 	}
 
 	private void selectActionMode(typeOfAction action){
@@ -171,8 +217,20 @@ public class TurnBasedBattleManager : MonoBehaviour {
 	Button attackButton;
 	Button itemButton;
 	// Update is called once per frame
+
+	/*
+	 * Control Flow
+	 * ------------
+	 * 1) List action options
+	 * 2) List all of the players who can use that option
+	 * 3) List the individual options within that action type
+	 * 4) List the opponents on which you can use the action on
+	 * 5) Commence actoin on target
+	 * 6) Revert to step one until win/lose condition
+	 * 
+	 * */
 	void Update () {
-		//Debug.Log (checkIfAllDead(opponents));
+
 		if (checkIfAllDead (opponents)) {
 			currentState = battleState.win;
 		} else if (checkIfAllDead (players)) {
@@ -180,10 +238,13 @@ public class TurnBasedBattleManager : MonoBehaviour {
 		}
 
 		switch (currentState) {
+
 		case (battleState.start):
 			battleStart();
 			break;
 		case (battleState.player):
+
+            //Check if all the players have attacked
 			bool allAttacked = false;
 			foreach(GameObject player in players){
 				allAttacked = player.GetComponent<BattleComponent>().attacked;
@@ -192,6 +253,8 @@ public class TurnBasedBattleManager : MonoBehaviour {
 				}
 			}
 
+            //if they all attacked, switch over to opponent's turn
+            //if they didn't, just keep going until all of the players have attacked
 			if(allAttacked){
 
 				foreach(GameObject player in players){
@@ -201,22 +264,41 @@ public class TurnBasedBattleManager : MonoBehaviour {
 				currentState = battleState.opponent;
 				setBotButtons(false);
 			}
-			//playersTurn();
 			break;
 		case (battleState.opponent):
 			opponentTurn();
-			//Debug.Log ("OPPONONET");
-			//opponentsTurn();
 			break;
 		case (battleState.lose):
-			//loseBattle();
+            endBattle();
 			break;
 		case (battleState.win):
-			//winBattle();
-			//Debug.Log("U WON!");
+            endBattle();
 			break;
+        case (battleState.flee):
+            endBattle();
+            break;
 		}
 	}
+
+    private void endBattle()
+    {
+        switch (currentState)
+        {
+            case (battleState.lose):
+                break;
+            case (battleState.win):
+                Debug.Log("U WON!");
+                break;
+            case (battleState.flee):
+                endBattle();
+                break;
+        }
+        foreach(GameObject g in opponents){
+            Destroy(g);
+        }
+        opponentsToLoad.Clear();
+        opponents.Clear();
+    }
 
 	private void opponentTurn(){
 		Debug.Log ("Enemy took turn");
@@ -253,12 +335,21 @@ public class TurnBasedBattleManager : MonoBehaviour {
 		attackButton.onClick.AddListener (() => selectActionMode(typeOfAction.attack));
 		attackButton.onClick.AddListener (() => listUserButtons(players));
 
-		//attackButton.onClick.AddListener (() => disableButton (attackButton));
 		attackButton.onClick.AddListener (() => setBotButtons(false));
 
 		itemButton = createButton("ITM", bottomPanel);
 
 		currentState = battleState.player;
 	}
+
+    public static void addOpponent(List<string> o)
+    {
+       opponentsToLoad.AddRange(o);
+    }
+
+    public static void addOpponent(string o)
+    {
+       opponentsToLoad.Add(o);
+    }
 
 }
